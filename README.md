@@ -1,107 +1,82 @@
-# QualGent Mobile QA Multi-Agent System
+# Mobile QA Agent - QualGent Challenge
 
-A multi-agent system for automated mobile QA testing on Android, built for the QualGent Research Intern Coding Challenge.
+A multi-agent system for automated mobile app testing using AI vision models.
 
 ## Architecture
 
-This system implements a **Supervisor-Planner-Executor** pattern:
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    MobileQAOrchestrator                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │   Planner    │→ │   Executor   │→ │  Supervisor  │       │
-│  │   (Groq)     │  │    (ADB)     │  │    (Groq)    │       │
-│  │              │  │              │  │              │       │
-│  │ • Analyze    │  │ • tap()      │  │ • Verify     │       │
-│  │   screenshot │  │ • swipe()    │  │   results    │       │
-│  │ • Decide     │  │ • type()     │  │ • Log final  │       │
-│  │   next step  │  │ • etc.       │  │   verdict    │       │
-│  └──────────────┘  └──────────────┘  └──────────────┘       │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-                    Android Emulator (via ADB)
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  PlannerAgent   │────▶│  ExecutorAgent  │────▶│ SupervisorAgent │
+│ (Llama 4 Vision)│     │ (ADB + UI Det)  │     │  (Evaluation)   │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
-### Agent Roles
+- **Planner**: Analyzes screenshots, decides actions
+- **Executor**: Runs ADB commands, detects UI elements
+- **Supervisor**: Evaluates results, reports bugs
 
-| Agent | Role | LLM-Powered? |
-|-------|------|--------------|
-| **Planner** | Analyzes screenshots, decides what action to take next | Yes (Groq) |
-| **Executor** | Executes ADB commands (tap, swipe, type) | No (deterministic) |
-| **Supervisor** | Verifies test completion, determines PASS/FAIL | Yes (Groq) |
+## Quick Start
 
-## Setup
-
-### 1. Prerequisites
-- Python 3.10+
-- Android Studio with emulator
-- Obsidian APK installed on emulator
-
-### 2. Install Dependencies
 ```bash
+# 1. Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Set API Key
-```bash
-cp .env.example .env
-# Edit .env and add your Groq API key
-```
+# 2. Get free API key from https://console.groq.com/keys
+echo "GROQ_API_KEY=gsk_your_key_here" > .env
 
-Get a free API key at: https://Groq.ai/
+# 3. Start emulator with Obsidian installed
+adb devices  # verify connected
 
-### 4. Start Emulator
-```bash
-emulator -avd YOUR_AVD_NAME -no-snapshot
-```
-
-## Usage
-
-### Interactive Mode
-```bash
+# 4. Reset Obsidian and run
+adb shell pm clear md.obsidian
 python main.py
-```
-
-### Run All Tests
-```bash
-python main.py --all
 ```
 
 ## Test Cases
 
-| # | Test Case | Expected |
-|---|-----------|----------|
-| 1 | Create vault "InternVault" and enter | PASS |
-| 2 | Create note "Meeting Notes" with "Daily Standup" | PASS |
-| 3 | Verify Appearance tab icon is Red | FAIL (it's monochrome) |
-| 4 | Find "Print to PDF" button in file menu | FAIL (doesn't exist) |
+| # | Test | Expected |
+|---|------|----------|
+| 1 | Create vault 'InternVault' | PASS |
+| 2 | Create note 'Meeting Notes' with 'Daily Standup' | PASS |
+| 3 | Verify Appearance icon is Red | FAIL (it's purple) |
+| 4 | Find 'Print to PDF' button | FAIL (doesn't exist) |
 
-## Output
+## Usage
 
-Results are saved as JSON with detailed step-by-step information.
-
-### Result Types
-- `test_passed`: All assertions verified
-- `test_assertion_failed`: Expected condition not met (detected bug)
-- `element_not_found`: UI element not found
-- `execution_error`: Technical error during execution
-
-## Project Structure
-```
-qualgent-challenge/
-├── main.py           # Entry point
-├── agents.py         # Planner, Executor, Supervisor
-├── adb_tools.py      # ADB command wrappers
-├── prompts.py        # System prompts for each agent
-├── report.md         # Framework decision memo
-├── requirements.txt  # Python dependencies
-└── README.md         # This file
+```bash
+python main.py           # Interactive menu
+python main.py --all     # Run all tests
+python main.py --test 1  # Run specific test
 ```
 
-## Demo Video
+## Key Features
 
-The demo video shows terminal output alongside the emulator executing all 4 test cases.
+- **UI Automator Integration**: Gets exact element coordinates (no guessing)
+- **State Machine**: Enforces tap → type → enter sequences
+- **Success Detection**: Knows when test objective is achieved
+- **Auto-Fixes**: Handles stylus popups, clears existing text, prioritizes buttons
 
-## License
+## Files
 
-MIT License - Created for QualGent Research Intern Challenge
+```
+├── main.py          # Entry point
+├── agents.py        # Three agents
+├── adb_tools.py     # ADB + UI detection
+├── prompts.py       # Agent prompts
+├── report.md        # Detailed technical report
+└── requirements.txt # Dependencies
+```
+
+## Reset Obsidian
+
+```bash
+adb shell pm clear md.obsidian
+```
+
+## Requirements
+
+- Python 3.10+
+- Android emulator with Obsidian installed
+- Groq API key (free)
+
+See `report.md` for detailed technical documentation.

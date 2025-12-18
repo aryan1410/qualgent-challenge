@@ -140,9 +140,10 @@ def parse_ui_elements(xml_content: str) -> List[Dict]:
     return elements
 
 
-def find_element_by_text(text: str, partial: bool = True) -> Optional[Dict]:
+def find_element_by_text(text: str, partial: bool = True, prefer_clickable: bool = True) -> Optional[Dict]:
     """
     Find a UI element by its text content.
+    If prefer_clickable is True, prioritizes clickable elements (buttons) over labels.
     Returns element dict with coordinates or None.
     """
     xml = get_ui_hierarchy()
@@ -153,16 +154,43 @@ def find_element_by_text(text: str, partial: bool = True) -> Optional[Dict]:
     elements = parse_ui_elements(xml)
     
     text_lower = text.lower()
+    matches = []
+    
     for elem in elements:
         elem_text = (elem.get('text', '') + ' ' + elem.get('content_desc', '')).lower()
         if partial:
             if text_lower in elem_text:
-                return elem
+                matches.append(elem)
         else:
             if text_lower == elem_text.strip():
-                return elem
+                matches.append(elem)
     
-    return None
+    if not matches:
+        return None
+    
+    if len(matches) == 1:
+        return matches[0]
+    
+    # Multiple matches - prioritize clickable buttons
+    if prefer_clickable:
+        # First, look for actual Button class
+        for elem in matches:
+            class_name = elem.get('class', '').lower()
+            if 'button' in class_name:
+                return elem
+        
+        # Next, look for clickable elements
+        for elem in matches:
+            if elem.get('clickable'):
+                return elem
+        
+        # Next, prefer elements in the lower half of screen (buttons usually at bottom)
+        bottom_elements = [e for e in matches if e.get('center_y', 0) > 1200]
+        if bottom_elements:
+            return bottom_elements[0]
+    
+    # Return first match as fallback
+    return matches[0]
 
 
 def find_input_field(label_text: str = None) -> Optional[Dict]:
@@ -278,9 +306,9 @@ def find_clickable_elements() -> List[Dict]:
 def get_element_coordinates(text: str) -> Optional[Tuple[int, int]]:
     """
     Find an element by text and return its center coordinates.
-    This is the key function for accurate tapping!
+    Prefers clickable buttons over text labels.
     """
-    element = find_element_by_text(text)
+    element = find_element_by_text(text, prefer_clickable=True)
     if element:
         return (element['center_x'], element['center_y'])
     return None
@@ -308,12 +336,22 @@ def tap(x: int, y: int) -> str:
 
 def tap_element(text: str) -> str:
     """
-    Find an element by text and tap on it.
-    More reliable than coordinate-based tapping!
+    Find a BUTTON/clickable element by text and tap on it.
+    Prioritizes clickable elements over text labels.
     """
-    coords = get_element_coordinates(text)
-    if coords:
-        x, y = coords
+    element = find_element_by_text(text, prefer_clickable=True)
+    if element:
+        x, y = element['center_x'], element['center_y']
+        is_clickable = element.get('clickable', False)
+        elem_class = element.get('class', 'unknown')
+        
+        # Log what we found for debugging
+        print(f"   📍 Found '{text}': class={elem_class}, clickable={is_clickable}, pos=({x}, {y})")
+        
+        # Warning if we might be tapping a label instead of button
+        if not is_clickable and y < 500:
+            print(f"   ⚠️  Warning: This might be a title/label, not a button!")
+        
         result = tap(x, y)
         return f"Found '{text}' at ({x}, {y}). {result}"
     else:
@@ -418,6 +456,77 @@ def type_text(text: str) -> str:
             return f"Failed to type: {result.stderr}"
     except subprocess.TimeoutExpired:
         return "Error: Typing timed out"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+
+def select_all() -> str:
+    """Select all text in the current field (Ctrl+A)."""
+    try:
+        result = subprocess.run(
+            ["adb", "shell", "input", "keyevent", "KEYCODE_CTRL_LEFT", "KEYCODE_A"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        # Alternative method using keyevent combination
+        subprocess.run(
+            ["adb", "shell", "input", "keycombination", "113", "29"],  # CTRL + A
+            capture_output=True,
+            timeout=5
+        )
+        return "Selected all text"
+    except Exception as e:
+        # Fallback: use move to start + shift+end to select all
+        try:
+            # Move to end
+            subprocess.run(["adb", "shell", "input", "keyevent", "123"], capture_output=True, timeout=5)  # MOVE_END
+            # Select all by shift+home
+            subprocess.run(["adb", "shell", "input", "keyevent", "--longpress", "122"], capture_output=True, timeout=5)
+            return "Selected all text (fallback)"
+        except:
+            return f"Error selecting all: {str(e)}"
+
+
+def clear_field() -> str:
+    """Clear all text in the currently focused input field."""
+    try:
+        # Method 1: Triple-tap to select all, then delete
+        # First, try selecting all with long press (some apps support this)
+        
+        # Method 2: Move to end, then delete backwards multiple times
+        # Move to end of field
+        subprocess.run(
+            ["adb", "shell", "input", "keyevent", "123"],  # KEYCODE_MOVE_END
+            capture_output=True,
+            timeout=5
+        )
+        time.sleep(0.1)
+        
+        # Delete backwards multiple times (handle up to 50 characters)
+        for _ in range(50):
+            subprocess.run(
+                ["adb", "shell", "input", "keyevent", "67"],  # KEYCODE_DEL (backspace)
+                capture_output=True,
+                timeout=2
+            )
+        
+        return "Cleared field"
+    except Exception as e:
+        return f"Error clearing field: {str(e)}"
+
+
+def clear_and_type(text: str) -> str:
+    """Clear the current field and type new text."""
+    try:
+        # First clear the field
+        clear_result = clear_field()
+        time.sleep(0.2)
+        
+        # Then type the new text
+        type_result = type_text(text)
+        
+        return f"{clear_result}. {type_result}"
     except Exception as e:
         return f"Error: {str(e)}"
 
