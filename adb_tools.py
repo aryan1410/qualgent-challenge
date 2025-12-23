@@ -234,6 +234,10 @@ def find_input_field(label_text: str = None) -> Optional[Dict]:
                 # Make sure it's not too small (likely a button) and has reasonable dimensions
                 if elem.get('height', 0) > 40 and elem.get('width', 0) > 200:
                     input_fields.append(elem)
+        
+        # Note titles in Obsidian start with "Untitled"
+        if text.startswith('Untitled'):
+            input_fields.append(elem)
     
     if not input_fields:
         # Fallback: look for focusable elements that aren't buttons
