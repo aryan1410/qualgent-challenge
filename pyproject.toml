@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mobile-qa-agent"
+version = "1.0.0"
+description = "Multi-agent Mobile QA Testing Framework built with Google ADK"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Aryan", email = "aryan@example.com"}
+]
+keywords = [
+    "mobile-testing",
+    "qa-automation", 
+    "android",
+    "adk",
+    "multi-agent",
+    "llm",
+    "ai-testing"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "google-adk>=0.3.0",
+    "google-generativeai>=0.8.0",
+    "python-dotenv>=1.0.0",
+    "pillow>=10.0.0",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black",
+    "isort",
+    "mypy",
+]
+analysis = [
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+]
+
+[project.scripts]
+mobile-qa = "src.main:main"
+
+[project.urls]
+Homepage = "https://github.com/aryan/mobile-qa-agent"
+Documentation = "https://github.com/aryan/mobile-qa-agent#readme"
+Repository = "https://github.com/aryan/mobile-qa-agent"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
