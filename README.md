@@ -1,55 +1,477 @@
-# Mobile QA Agent - Automated Android Testing with Google ADK
+# 📱 Mobile QA Agent
 
-A multi-agent mobile QA testing framework built with **Google Agent Development Kit (ADK)**. This system uses AI vision models to analyze Android app screenshots and execute automated test cases through ADB (Android Debug Bridge).
+## AI-Powered Mobile Application Testing with Vision & Coordinate-Based Automation
 
-## Features
+<div align="center">
 
-- **🤖 Multi-Agent Architecture**: Built on Google ADK with specialized agents for planning, execution, and evaluation
-- **📊 Comprehensive Metrics System**: 
-  - Step-by-step reward calculation
-  - Subgoal tracking and completion rates
-  - Ground truth plan comparison
-  - Action relevance scoring
-- **🎯 10 Pre-defined Test Cases**: Ready-to-run tests for Obsidian app
-- **📱 ADB Integration**: Direct Android device control via UI Automator
-- **📈 Reward Function**:
-  - **-0.05 per step**: Efficiency penalty
-  - **+0.2 per subgoal**: Progress reward
-  - **+1.0 completion**: Success bonus
-- **🔍 Visual UI Analysis**: Screen state detection and element parsing
-- **📁 Results Tracking**: JSON-based episode recording with detailed metrics
+![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
+![Google ADK](https://img.shields.io/badge/Google%20ADK-0.3+-green.svg)
+![Android](https://img.shields.io/badge/Android-ADB-brightgreen.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-## Architecture
+**An intelligent QA testing agent that can see, understand, and interact with mobile applications autonomously.**
+
+[Features](#-features) • [Architecture](#-architecture) • [Installation](#-installation) • [Usage](#-usage) • [Metrics](#-metrics)
+
+</div>
+
+---
+
+## 🎯 Project Overview
+
+Mobile QA Agent is an AI-powered testing framework that combines:
+- **Vision AI**: Screenshots analyzed by LLMs to understand UI state
+- **Coordinate-Based Automation**: Precise UI element interaction via ADB
+- **Intelligent Decision Making**: Agent autonomously navigates and tests apps
+
+### What Makes This Different?
+
+| Traditional Automation | Mobile QA Agent |
+|----------------------|-----------------|
+| Hardcoded element IDs | Vision-based element detection |
+| Brittle XPath selectors | Intelligent coordinate extraction |
+| Script-based flows | AI-driven decision making |
+| Manual test maintenance | Self-adapting to UI changes |
+
+---
+
+## ✨ Features
+
+### 🤖 Smart Agent Capabilities
+- **Screenshot Analysis**: Compressed screenshots sent to vision models
+- **UI Element Extraction**: Automatic parsing of Android UI hierarchy
+- **Intelligent Navigation**: Agent decides next action based on screen state
+- **Multi-Step Task Completion**: Complex workflows executed autonomously
+
+### 📊 Comprehensive Metrics
+- **Plan Adherence Score**: How closely agent followed ideal workflow
+- **Action Efficiency**: Ratio of ideal vs actual steps taken
+- **Subgoal Tracking**: Milestone completion monitoring
+- **Tool Usage Analytics**: Which tools used and how often
+
+### 🧪 10 Pre-Built Test Cases
+1. Create Vault
+2. Create Note
+3. Verify Appearance Icon Color
+4. Find Print to PDF
+5. Create Multiple Notes
+6. Search Notes
+7. Delete Note
+8. Change Theme
+9. Create Vault with New Folder
+10. Link Notes
+
+---
+
+## 🏗 Architecture
+
+### High-Level System Design
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Mobile QA Orchestrator                        │
-│                  (Google ADK Root Agent)                         │
-└─────────────────────┬───────────────────────────────────────────┘
-                      │
-        ┌─────────────┼─────────────┐
-        │             │             │
-        ▼             ▼             ▼
-┌───────────────┐ ┌───────────────┐ ┌───────────────┐
-│ PlannerAgent  │ │ ExecutorAgent │ │SupervisorAgent│
-├───────────────┤ ├───────────────┤ ├───────────────┤
-│ • Gemini 2.0  │ │ • ADB Tools   │ │ • Gemini 2.0  │
-│ • UI Analysis │ │ • UI Automator│ │ • Evaluation  │
-│ • Decision    │ │ • Screenshots │ │ • Bug Reports │
-└───────────────┘ └───────────────┘ └───────────────┘
+│                        MOBILE QA AGENT                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐        │
+│  │   main.py   │───▶│  agent.py   │───▶│ adb_tools.py│        │
+│  │ Test Runner │    │ AI Agent +  │    │   Device    │        │
+│  │             │    │  Prompts    │    │ Interaction │        │
+│  └─────────────┘    └─────────────┘    └─────────────┘        │
+│         │                  │                  │                 │
+│         ▼                  ▼                  ▼                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐        │
+│  │ metrics.py  │    │ Google ADK  │    │Android Device│        │
+│  │  Tracking   │    │   + LLM     │    │  /Emulator  │        │
+│  └─────────────┘    └─────────────┘    └─────────────┘        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Installation
+### Directory Structure
+
+```
+mobile-qa-agent/
+├── src/
+│   ├── main.py                      # 🚀 Entry point & test runner
+│   └── mobile_qa_agent/
+│       ├── agent.py                 # 🤖 AI agent, tools & prompts
+│       └── tools/
+│           ├── adb_tools.py         # 📱 ADB commands & UI parsing
+│           └── metrics.py           # 📊 Metrics & ideal workflows
+├── tests/                           # 🧪 Unit tests
+├── results/                         # 📁 Test results output
+├── setup.sh                         # ⚙️ Setup script
+├── requirements.txt                 # 📦 Dependencies
+├── pyproject.toml                   # 📋 Project configuration
+└── README.md                        # 📖 This file
+```
+
+---
+
+## 🔄 Code Flow & Execution Order
+
+### 1️⃣ Test Execution Flow
+
+```
+User runs: python src/main.py --task 1
+                    │
+                    ▼
+┌──────────────────────────────────────────────────────────────┐
+│                      main.py                                  │
+├──────────────────────────────────────────────────────────────┤
+│  1. Parse CLI arguments                                       │
+│  2. Load test case from TEST_CASES[1]                        │
+│  3. Initialize MobileQARunner                                │
+│  4. Check prerequisites (ADB, device)                        │
+│  5. If reset_app=True: clear_app_data() + launch_app()       │
+│  6. Initialize MetricsTracker                                │
+│  7. Call _run_test_with_adk()                               │
+└──────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+┌──────────────────────────────────────────────────────────────┐
+│                      agent.py                                 │
+├──────────────────────────────────────────────────────────────┤
+│  1. create_test_agent() called                               │
+│  2. get_test_prompt() selects appropriate prompt             │
+│  3. Agent created with tools: [get_screen_elements,          │
+│     tap_at_coordinates, tap_element_by_text,                 │
+│     type_text_input, press_enter_key, press_back_button,     │
+│     swipe_screen]                                            │
+│  4. InMemoryRunner executes agent                            │
+└──────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+┌──────────────────────────────────────────────────────────────┐
+│                   Agent Loop (ADK)                           │
+├──────────────────────────────────────────────────────────────┤
+│  REPEAT until "TEST PASSED" or "TEST FAILED" or max_steps:   │
+│                                                              │
+│  1. Agent calls get_screen_elements()                        │
+│     └─▶ adb_tools.py: take_screenshot_compressed()          │
+│     └─▶ adb_tools.py: get_ui_hierarchy()                    │
+│     └─▶ adb_tools.py: parse_ui_elements()                   │
+│     └─▶ Returns: {screenshot_base64, elements, screen_type} │
+│                                                              │
+│  2. LLM analyzes screenshot + elements                       │
+│     └─▶ Decides next action based on prompt instructions    │
+│                                                              │
+│  3. Agent calls action tool (e.g., tap_at_coordinates)       │
+│     └─▶ adb_tools.py: tap(x, y)                             │
+│     └─▶ Returns: {success: True, message: "Tapped at..."}   │
+│                                                              │
+│  4. MetricsTracker.record_step() logs the action             │
+│     └─▶ Matches against ideal workflow                       │
+│     └─▶ Checks subgoal completion                           │
+│     └─▶ Calculates rewards                                  │
+└──────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+┌──────────────────────────────────────────────────────────────┐
+│                   Finalization                               │
+├──────────────────────────────────────────────────────────────┤
+│  1. metrics.finalize() calculates final scores               │
+│  2. metrics.print_summary() displays results                 │
+│  3. Results saved to results/ directory                      │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 2️⃣ Tool Call Flow
+
+```
+Agent decides to tap "Create a vault" button
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│  tap_element_by_text("Create a vault")  │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│  adb_tools.tap_element(text)            │
+│  1. get_ui_hierarchy() - dump XML       │
+│  2. parse_ui_elements() - extract nodes │
+│  3. Find element matching text          │
+│  4. Get center coordinates (x, y)       │
+│  5. tap(x, y) - execute ADB tap         │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│  ADB Command Executed:                  │
+│  adb shell input tap 540 385            │
+└─────────────────────────────────────────┘
+```
+
+### 3️⃣ Screenshot Processing Flow
+
+```
+get_screen_elements() called
+            │
+            ▼
+┌───────────────────────────────────────────────────────────┐
+│  take_screenshot_compressed()                              │
+├───────────────────────────────────────────────────────────┤
+│  1. adb exec-out screencap -p → Raw PNG bytes             │
+│  2. PIL.Image.open() → Load image                         │
+│  3. Resize: 1080px → 270px width (75% reduction)          │
+│  4. Convert PNG → JPEG at 40% quality                     │
+│  5. Base64 encode → ~10-20KB string                       │
+│  6. Return compressed image for LLM                       │
+└───────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌───────────────────────────────────────────────────────────┐
+│  get_ui_hierarchy()                                        │
+├───────────────────────────────────────────────────────────┤
+│  1. adb shell uiautomator dump → XML file on device       │
+│  2. adb shell cat → Read XML content                      │
+│  3. Return XML string                                     │
+└───────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌───────────────────────────────────────────────────────────┐
+│  parse_ui_elements(xml)                                    │
+├───────────────────────────────────────────────────────────┤
+│  1. Regex extract all <node> elements                     │
+│  2. For each node, extract:                               │
+│     - text, content-desc                                  │
+│     - bounds → calculate center (x, y)                    │
+│     - class → determine type (button/input/text)          │
+│  3. Filter out full-screen containers                     │
+│  4. Sort by y-position (top to bottom)                    │
+│  5. Return list of UI elements                            │
+└───────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌───────────────────────────────────────────────────────────┐
+│  Returns to Agent:                                         │
+│  {                                                         │
+│    "screenshot_base64": "data:image/jpeg;base64,...",     │
+│    "elements": [                                           │
+│      {"text": "Create a vault", "x": 540, "y": 385, ...}, │
+│      {"text": "Use my existing vault", "x": 540, "y": 450}│
+│    ],                                                      │
+│    "screen_type": "initial_vault_choice"                  │
+│  }                                                         │
+└───────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📁 File Descriptions
+
+### `src/main.py` - Test Runner & Entry Point
+
+**Purpose**: CLI interface, test case definitions, orchestrates test execution
+
+**Key Components**:
+```python
+TEST_CASES = {
+    1: {
+        "name": "Create Vault",
+        "description": "...",
+        "reset_app": True,      # Clear app data before test
+        "success_condition": "...",
+        "ground_truth_steps": [...]
+    },
+    # ... tests 2-10
+}
+
+class MobileQARunner:
+    def run_test(self, test_number: int) -> dict
+    def _run_test_with_adk(self, test: dict, metrics: MetricsTracker)
+    def run_all_tests(self) -> dict
+```
+
+**When Called**: First file executed, handles CLI arguments
+
+---
+
+### `src/mobile_qa_agent/agent.py` - AI Agent & Prompts
+
+**Purpose**: Defines the intelligent agent, all tools, and task-specific prompts
+
+**Key Components**:
+```python
+# Tools available to the agent
+ALL_TOOLS = [
+    get_screen_elements,    # See screen state
+    tap_at_coordinates,     # Tap at (x, y)
+    tap_element_by_text,    # Find and tap by text
+    type_text_input,        # Type into input field
+    press_enter_key,        # Press Enter
+    press_back_button,      # Navigate back
+    swipe_screen           # Scroll up/down
+]
+
+# Task-specific prompts
+VAULT_CREATION_PROMPT = "..."
+NOTE_CREATION_PROMPT = "..."
+SEARCH_NOTE_PROMPT = "..."
+# ... etc
+
+def get_test_prompt(test_name, test_description, success_condition) -> str
+def create_test_agent(test_name, test_description, success_condition, model_name) -> Agent
+```
+
+**When Called**: Agent created by main.py for each test
+
+---
+
+### `src/mobile_qa_agent/tools/adb_tools.py` - Device Interaction
+
+**Purpose**: Low-level ADB commands, screenshot capture, UI parsing
+
+**Key Functions**:
+```python
+# Screenshot
+def take_screenshot_compressed(max_width=270, quality=40) -> str
+
+# UI Hierarchy
+def get_ui_hierarchy() -> str
+def parse_ui_elements(xml: str) -> List[Dict]
+
+# Touch/Input
+def tap(x: int, y: int)
+def type_text(text: str)
+def press_enter()
+def press_back()
+
+# App Control
+def launch_app(package: str)
+def clear_app_data(package: str)
+```
+
+**When Called**: By agent tools during test execution
+
+---
+
+### `src/mobile_qa_agent/tools/metrics.py` - Metrics & Ideal Workflows
+
+**Purpose**: Track agent performance, compare against ideal workflows
+
+**Key Components**:
+```python
+# Ideal workflow for each test
+IDEAL_WORKFLOWS = {
+    1: {
+        "name": "Create Vault",
+        "ideal_actions": [
+            {"tool": "get_screen_elements", ...},
+            {"tool": "tap_element_by_text", "params": {"text": "Create a vault"}, ...},
+            # ...
+        ],
+        "subgoals": ["tap_create_vault", "enter_vault_name", ...]
+    },
+    # ... tests 2-10
+}
+
+class MetricsTracker:
+    def start_step(self)
+    def record_step(self, action_type, action_params, success, ...)
+    def finalize(self, final_result, result_type, reasoning)
+    def print_summary(self)
+```
+
+**When Called**: Throughout test execution to track every action
+
+---
+
+## 📊 Metrics Explained
+
+### Plan Adherence Score
+
+**What it measures**: How closely the agent followed the ideal workflow
+
+**Calculation**:
+```
+Plan Adherence = (Matched Ideal Steps / Total Ideal Steps) × 100%
+```
+
+**Example**:
+- Ideal workflow has 13 steps
+- Agent matched 11 of them
+- Plan Adherence = 11/13 = **84.6%**
+
+---
+
+### Action Efficiency
+
+**What it measures**: How efficiently the agent completed the task
+
+**Calculation**:
+```
+Action Efficiency = min(1.0, Ideal Steps / Actual Steps) × 100%
+```
+
+**Example**:
+- Ideal workflow: 13 steps
+- Agent took: 18 steps
+- Action Efficiency = 13/18 = **72.2%**
+
+---
+
+### Subgoal Completion Rate
+
+**What it measures**: Percentage of key milestones achieved
+
+**Example Subgoals for Create Vault**:
+- ✅ tap_create_vault
+- ✅ handle_sync_screen
+- ✅ enter_vault_name
+- ✅ confirm_vault_creation
+- ✅ select_folder
+- ❌ handle_permissions (skipped)
+- ✅ enter_vault
+
+**Subgoal Completion = 6/7 = 85.7%**
+
+---
+
+### Reward Calculation
+
+```
+Total Reward = Step Penalty + Subgoal Rewards + Completion Bonus
+
+Where:
+- Step Penalty    = -0.05 per step taken
+- Subgoal Reward  = +0.20 per subgoal achieved
+- Completion Bonus = +1.00 if test passed
+```
+
+**Example**:
+```
+Steps taken: 15        → Penalty:  -0.75
+Subgoals achieved: 6   → Reward:   +1.20
+Test passed: Yes       → Bonus:    +1.00
+                         ─────────────────
+Total Reward:                      +1.45
+```
+
+---
+
+### Additional Metrics
+
+| Metric | Description |
+|--------|-------------|
+| `tool_usage_count` | How many times each tool was called |
+| `screen_transitions` | Sequence of screen type changes |
+| `error_count` | Number of failed actions |
+| `retry_count` | Actions repeated (indicates getting stuck) |
+| `duration_seconds` | Total test execution time |
+| `average_step_duration` | Average time per action |
+
+---
+
+## 🚀 Installation
 
 ### Prerequisites
 
-1. **Python 3.10+**
-2. **Android SDK with ADB**
-   - Download from [Android Studio](https://developer.android.com/studio)
-   - Ensure `adb` is in your PATH
-3. **Android Emulator or Device**
-   - API Level 30+ recommended
-   - Obsidian app installed (`md.obsidian`)
+- Python 3.10 or higher
+- Android SDK (ADB)
+- Android Emulator or physical device
+- Google API Key (for Gemini) or OpenAI API Key
 
 ### Quick Setup
 
@@ -61,302 +483,163 @@ cd mobile-qa-agent
 # Run setup script
 chmod +x setup.sh
 ./setup.sh
+
+# Configure API key
+nano .env  # Add your GOOGLE_API_KEY
+
+# Start Android emulator (or connect device)
+emulator -avd Pixel_6_API_34
+
+# Install Obsidian on device
+adb install obsidian.apk
 ```
 
-### Manual Setup
+### Manual Installation
 
 ```bash
 # Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Install package
 pip install -e .
 
-# Configure API key
+# Create .env file
 cp .env.example .env
-# Edit .env and add your GOOGLE_API_KEY
+# Edit .env and add your API key
 ```
 
-### API Key Setup
+---
 
-Get a Google API key from [Google AI Studio](https://aistudio.google.com/apikey):
-
-```bash
-# Option 1: Google AI Studio (Recommended for development)
-export GOOGLE_API_KEY="your-api-key-here"
-
-# Option 2: Vertex AI (For production)
-export GOOGLE_GENAI_USE_VERTEXAI=TRUE
-export GOOGLE_CLOUD_PROJECT=your-project-id
-export GOOGLE_CLOUD_LOCATION=us-central1
-```
-
-## Usage
+## 💻 Usage
 
 ### List Available Tests
 
 ```bash
-python -m src.main --list
+python src/main.py --list
 ```
 
-### Run a Single Test
+### Run Single Test
 
 ```bash
-# Run test 1 (Create Vault)
-python -m src.main --task 1
-
-# Run with reward metrics
-python -m src.main --task 1 --calculate-reward
+python src/main.py --task 1          # Run test 1
+python src/main.py --task 5          # Run test 5
 ```
 
 ### Run All Tests
 
 ```bash
-python -m src.main --task all
+python src/main.py --task all
 ```
 
-### Using ADK Web Interface
+### Disable Metrics
 
 ```bash
-# Navigate to src directory
-cd src
-
-# Start ADK web UI
-adk web
+python src/main.py --task 1 --no-reward
 ```
 
-Then open http://localhost:8000 in your browser.
+---
 
-### Interactive Mode
+## 📋 Test Cases Summary
 
-```bash
-python -m src.main
-# Follow the interactive menu
-```
+| # | Test Name | Reset | Expected |
+|---|-----------|-------|----------|
+| 1 | Create Vault | ✅ | PASS |
+| 2 | Create Note | ❌ | PASS |
+| 3 | Verify Appearance Icon Color | ❌ | FAIL |
+| 4 | Find Print to PDF | ❌ | FAIL |
+| 5 | Create Multiple Notes | ❌ | PASS |
+| 6 | Search Notes | ❌ | PASS |
+| 7 | Delete Note | ❌ | PASS |
+| 8 | Change Theme | ❌ | PASS |
+| 9 | Create Vault with New Folder | ✅ | PASS |
+| 10 | Link Notes | ❌ | PASS |
 
-## Test Cases
+---
 
-| # | Name | Description | Expected |
-|---|------|-------------|----------|
-| 1 | Create Vault | Create vault named 'InternVault' | PASS |
-| 2 | Create Note | Create note with title and content | PASS |
-| 3 | Verify Icon Color | Check Appearance icon is Red | FAIL* |
-| 4 | Find Print to PDF | Search for print option | FAIL* |
-| 5 | Create Multiple Notes | Create two notes | PASS |
-| 6 | Search Notes | Use search function | PASS |
-| 7 | Delete Note | Delete an existing note | PASS |
-| 8 | Change Theme | Switch to dark mode | PASS |
-| 9 | Create Folder | Create folder in vault | PASS |
-| 10 | Link Notes | Create link between notes | PASS |
+## 🔧 Configuration
 
-*Tests 3-4 are intentionally designed to fail to demonstrate bug detection capabilities.
+### Environment Variables
 
-## Metrics System
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GOOGLE_API_KEY` | Google Gemini API key | One of these |
+| `OPENAI_API_KEY` | OpenAI API key | required |
+| `TOGETHER_API_KEY` | Together AI key | |
+| `APP_PACKAGE` | Target app package | No (default: md.obsidian) |
 
-### Reward Function
+### Model Selection Priority
 
-The framework uses a comprehensive reward system for agent evaluation:
+1. Together AI (if `TOGETHER_API_KEY` set)
+2. OpenAI (if `OPENAI_API_KEY` set)
+3. Google Gemini (if `GOOGLE_API_KEY` set)
 
-```
-Total Reward = Step Penalty + Subgoal Reward + Completion Bonus
+---
 
-Where:
-- Step Penalty = -0.05 × number_of_steps
-- Subgoal Reward = +0.2 × subgoals_achieved
-- Completion Bonus = +1.0 if PASS, 0 otherwise
-```
-
-### Example Output
+## 📈 Sample Output
 
 ```
 ============================================================
 📊 TEST METRICS SUMMARY
 ============================================================
 
-📋 Test: Create a new Vault named 'InternVault'...
+📋 Test: Create Vault...
 🎯 Result: PASS (test_passed)
 ✓ Matches Expected: True
 
 📈 STEPS:
-   Total: 8
-   Successful: 8
+   Total: 15
+   Successful: 15
    Failed: 0
+   Errors: 0
+   Retries: 1
 
 💰 REWARDS:
-   Step Penalty: -0.40
-   Subgoal Reward: 1.20
+   Step Penalty: -0.75
+   Subgoal Reward: 1.40
    Completion Bonus: 1.00
-   TOTAL REWARD: 1.80
+   TOTAL REWARD: 1.65
 
 🎯 SUBGOALS:
-   Defined: 6
-   Achieved: 6
+   Defined: 7
+   Achieved: 7
    Completion Rate: 100.0%
+   ✓ Completed: tap_create_vault, handle_sync_screen, enter_vault_name, 
+                confirm_vault_creation, select_folder, handle_permissions, enter_vault
 
-📐 GROUND TRUTH:
-   Plan Adherence: 87.5%
+📐 PLAN ADHERENCE:
+   Ideal Steps: 13
+   Matched Steps: 12
+   Plan Adherence: 92.3%
+   Action Efficiency: 86.7%
+   Extra Actions: 2
+   Missed Actions: 1
+
+🔧 TOOL USAGE:
+   get_screen_elements: 8
+   tap_element_by_text: 5
+   type_text_input: 1
+   tap_at_coordinates: 1
 
 ⏱️ TIMING:
-   Duration: 45.2s
-   Avg Step: 5.65s
+   Duration: 45.3s
+   Avg Step: 3.02s
 ============================================================
 ```
 
-### Metrics Tracked
+---
 
-- **Step-level metrics**: Action type, duration, success, relevance score
-- **Subgoal tracking**: Automatic detection of intermediate achievements
-- **Ground truth comparison**: How well agent follows expected plan
-- **Reward calculation**: Per-step and cumulative rewards
-- **Timing analysis**: Duration and efficiency metrics
+## 🙏 Acknowledgments
 
-## Project Structure
+- Built with [Google ADK](https://github.com/google/adk-python)
+- Tested on [Obsidian](https://obsidian.md/) mobile app
+- Inspired by modern AI agent architectures
 
-```
-mobile-qa-agent/
-├── src/
-│   ├── main.py                 # Main runner and CLI
-│   └── mobile_qa_agent/
-│       ├── __init__.py
-│       ├── agent.py            # ADK agent definitions
-│       └── tools/
-│           ├── __init__.py
-│           ├── adb_tools.py    # ADB and UI Automator functions
-│           └── metrics.py      # Metrics tracking system
-├── tests/
-│   ├── test_adb_tools.py
-│   ├── test_metrics.py
-│   └── test_agent.py
-├── results/                    # Test results (JSON)
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── METRICS.md
-│   └── CONTRIBUTING.md
-├── prompts/                    # Agent prompt templates
-├── setup.sh                    # Setup script
-├── requirements.txt
-├── pyproject.toml
-├── .env.example
-└── README.md
-```
+---
 
-## Development
+<div align="center">
 
-### Running Tests
+**Made with ❤️ for the QualGent Research Challenge**
 
-```bash
-# Run all tests
-python -m pytest tests/
-
-# Run specific test
-python -m pytest tests/test_metrics.py -v
-
-# Run with coverage
-python -m pytest --cov=src tests/
-```
-
-### Code Style
-
-```bash
-# Format code
-black src/ tests/
-
-# Sort imports
-isort src/ tests/
-
-# Type checking
-mypy src/
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **ADB not found**
-   ```bash
-   # Add Android SDK to PATH
-   export PATH=$PATH:$ANDROID_HOME/platform-tools
-   ```
-
-2. **No device connected**
-   ```bash
-   # Check connected devices
-   adb devices
-   
-   # Start emulator
-   emulator -avd YourAVDName
-   ```
-
-3. **API key errors**
-   ```bash
-   # Verify API key is set
-   echo $GOOGLE_API_KEY
-   
-   # Test API connection
-   python -c "import google.generativeai as genai; print('OK')"
-   ```
-
-4. **Obsidian not installed**
-   ```bash
-   # Install via ADB
-   adb install obsidian.apk
-   
-   # Or install from Play Store on emulator
-   ```
-
-### Debug Mode
-
-```bash
-# Enable verbose logging
-python -m src.main --task 1 --verbose
-
-# Check ADB connection
-adb shell echo "Connected"
-
-# Get UI hierarchy manually
-adb shell uiautomator dump /sdcard/ui.xml
-adb shell cat /sdcard/ui.xml
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for detailed guidelines.
-
-## License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
-
-## Citation
-
-```bibtex
-@misc{mobile_qa_agent_adk,
-  title={Mobile QA Agent: Multi-Agent Testing Framework with Google ADK},
-  author={Aryan},
-  year={2024},
-  url={https://github.com/aryan/mobile-qa-agent},
-  note={Built with Google Agent Development Kit for automated Android testing}
-}
-```
-
-## Acknowledgments
-
-- [Google Agent Development Kit (ADK)](https://github.com/google/adk-python)
-- [Android Debug Bridge (ADB)](https://developer.android.com/tools/adb)
-- [UI Automator](https://developer.android.com/training/testing/ui-automator)
-- [Obsidian](https://obsidian.md/) for testing target
-
-## Support
-
-- 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/aryan/mobile-qa-agent/issues)
-- 💬 [Discussions](https://github.com/aryan/mobile-qa-agent/discussions)
+</div>

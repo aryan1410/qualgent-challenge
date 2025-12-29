@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mobile-qa-agent"
 version = "1.0.0"
-description = "Multi-agent Mobile QA Testing Framework built with Google ADK"
+description = "AI-Powered Mobile QA Testing Agent using Google ADK with Vision and Coordinate-Based Automation"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -16,10 +16,12 @@ keywords = [
     "mobile-testing",
     "qa-automation", 
     "android",
-    "adk",
-    "multi-agent",
-    "llm",
-    "ai-testing"
+    "adb",
+    "google-adk",
+    "vision-ai",
+    "llm-agent",
+    "ui-testing",
+    "obsidian"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -31,27 +33,54 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Testing",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Operating System :: OS Independent",
 ]
 dependencies = [
+    # Google ADK - Core agent framework
     "google-adk>=0.3.0",
     "google-generativeai>=0.8.0",
+    
+    # Environment and configuration
     "python-dotenv>=1.0.0",
+    
+    # Image processing for screenshot compression
     "pillow>=10.0.0",
+    
+    # Data handling
     "numpy>=1.24.0",
-    "pandas>=2.0.0",
 ]
 
 [project.optional-dependencies]
+# Development tools
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "black",
     "isort",
     "mypy",
+    "flake8",
 ]
+
+# For metrics analysis and visualization
 analysis = [
+    "pandas>=2.0.0",
     "matplotlib>=3.7.0",
     "seaborn>=0.12.0",
+]
+
+# OpenAI support (alternative to Gemini)
+openai = [
+    "openai>=1.0.0",
+]
+
+# Together AI support (alternative LLM provider)
+together = [
+    "together>=0.2.0",
+]
+
+# All optional dependencies
+all = [
+    "mobile-qa-agent[dev,analysis,openai,together]",
 ]
 
 [project.scripts]
@@ -61,20 +90,41 @@ mobile-qa = "src.main:main"
 Homepage = "https://github.com/aryan/mobile-qa-agent"
 Documentation = "https://github.com/aryan/mobile-qa-agent#readme"
 Repository = "https://github.com/aryan/mobile-qa-agent"
+Issues = "https://github.com/aryan/mobile-qa-agent/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
 
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.txt", "*.json"]
+
 [tool.black]
 line-length = 100
-target-version = ['py310']
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # defaults
+  \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
 
 [tool.isort]
 profile = "black"
 line_length = 100
+skip_gitignore = true
 
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"

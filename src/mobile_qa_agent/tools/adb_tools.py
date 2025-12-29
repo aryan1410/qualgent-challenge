@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Tuple
 def run_adb_command(args: List[str], capture_output: bool = True) -> subprocess.CompletedProcess:
     """Run an ADB command and return the result."""
     cmd = ["adb"] + args
-    return subprocess.run(cmd, capture_output=capture_output, text=True)
+    return subprocess.run(cmd, capture_output=capture_output, text=True, encoding='utf-8', errors='replace')
 
 
 def take_screenshot() -> str:
@@ -37,6 +37,57 @@ def take_screenshot() -> str:
         return b64_image
     except Exception as e:
         return f"Error: {str(e)}"
+
+
+def take_screenshot_compressed(max_width: int = 270, quality: int = 40) -> str:
+    """
+    Take a screenshot, resize it, and compress to reduce token usage.
+    
+    Args:
+        max_width: Maximum width to resize to (height scales proportionally)
+        quality: JPEG quality (1-100, lower = smaller file)
+    
+    Returns:
+        str: Base64 encoded JPEG image, or error message
+    """
+    try:
+        from PIL import Image
+        import io
+        
+        # Take screenshot
+        result = subprocess.run(
+            ["adb", "exec-out", "screencap", "-p"],
+            capture_output=True
+        )
+        if result.returncode != 0:
+            return f"Error: Screenshot failed - {result.stderr}"
+        
+        # Open image with PIL
+        img = Image.open(io.BytesIO(result.stdout))
+        
+        # Resize - make it much smaller
+        ratio = max_width / img.width
+        new_height = int(img.height * ratio)
+        img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Convert to RGB (JPEG doesn't support alpha)
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        # Compress as JPEG with low quality
+        buffer = io.BytesIO()
+        img.save(buffer, format='JPEG', quality=quality, optimize=True)
+        buffer.seek(0)
+        
+        b64_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        print(f"[screenshot] Compressed to {max_width}x{new_height}, size={len(b64_image)} chars")
+        return b64_image
+    except ImportError:
+        print("[screenshot] PIL not available, skipping screenshot")
+        return None
+    except Exception as e:
+        print(f"[screenshot] Error: {str(e)}")
+        return None
 
 
 def get_screen_size() -> Tuple[int, int]:
@@ -173,9 +224,19 @@ def get_ui_hierarchy() -> str:
         run_adb_command(["shell", "uiautomator", "dump", "/sdcard/ui_dump.xml"])
         time.sleep(0.3)
         
-        # Read the file
-        result = run_adb_command(["shell", "cat", "/sdcard/ui_dump.xml"])
-        return result.stdout
+        # Read the file with explicit UTF-8 handling
+        result = subprocess.run(
+            ["adb", "shell", "cat", "/sdcard/ui_dump.xml"],
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace'
+        )
+        
+        if result.stdout:
+            return result.stdout
+        else:
+            return "Error: Empty UI hierarchy"
     except Exception as e:
         return f"Error: {str(e)}"
 

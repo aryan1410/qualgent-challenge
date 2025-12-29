@@ -2,7 +2,7 @@
 """
 Mobile QA Agent - Main Runner
 ==============================
-Run mobile QA tests using Google ADK framework with Groq LLM.
+Run mobile QA tests using Google ADK framework.
 
 Usage:
     python src/main.py --task 1                    # Run test 1
@@ -41,29 +41,37 @@ try:
         launch_app,
         clear_app_data,
         check_device_connected,
-        find_clickable_elements,
-        tap_element,
-        tap,
-        clear_and_type,
-        press_enter,
-        press_back,
-        take_screenshot
     )
     from mobile_qa_agent.tools.metrics import MetricsTracker
+    from mobile_qa_agent.agent import (
+        get_screen_elements,
+        tap_at_coordinates,
+        tap_element_by_text,
+        type_text_input,
+        press_enter_key,
+        press_back_button,
+        ALL_TOOLS,
+        get_test_prompt,
+        create_test_agent
+    )
 except ImportError:
     from src.mobile_qa_agent.tools.adb_tools import (
         launch_app,
         clear_app_data,
         check_device_connected,
-        find_clickable_elements,
-        tap_element,
-        tap,
-        clear_and_type,
-        press_enter,
-        press_back,
-        take_screenshot
     )
     from src.mobile_qa_agent.tools.metrics import MetricsTracker
+    from src.mobile_qa_agent.agent import (
+        get_screen_elements,
+        tap_at_coordinates,
+        tap_element_by_text,
+        type_text_input,
+        press_enter_key,
+        press_back_button,
+        ALL_TOOLS,
+        get_test_prompt,
+        create_test_agent
+    )
 
 # Check for Google ADK
 ADK_AVAILABLE = False
@@ -88,12 +96,13 @@ TEST_CASES = {
         "description": "Open Obsidian, create a new Vault named 'InternVault', and enter the vault.",
         "expected_result": "PASS",
         "app_package": "md.obsidian",
+        "reset_app": True,  # Fresh start needed
+        "success_condition": "Screen shows 'Create new note' option (inside vault)",
         "ground_truth_steps": [
             "tap_element: Create a vault",
             "tap_element: Continue without sync",
-            "tap_input: Vault name",
-            "clear_and_type: InternVault",
-            "press_enter",
+            "tap_input_field",
+            "type_text: InternVault",
             "tap_element: Create a vault",
             "tap_element: USE THIS FOLDER",
             "tap_element: Allow"
@@ -104,11 +113,13 @@ TEST_CASES = {
         "description": "Create a new note titled 'Meeting Notes' with content 'Daily Standup'.",
         "expected_result": "PASS",
         "app_package": "md.obsidian",
+        "reset_app": False,  # Needs existing vault from Test 1
+        "success_condition": "Note exists with title 'Meeting Notes' and content contains 'Daily Standup'",
         "ground_truth_steps": [
             "tap_element: Create new note",
-            "tap_input: Untitled",
+            "tap_input_field: title",
             "clear_and_type: Meeting Notes",
-            "press_enter",
+            "tap_element: note body",
             "type_text: Daily Standup"
         ]
     },
@@ -117,6 +128,8 @@ TEST_CASES = {
         "description": "Navigate to Settings and verify the Appearance tab icon is Red.",
         "expected_result": "FAIL",
         "app_package": "md.obsidian",
+        "reset_app": False,  # Needs existing vault
+        "success_condition": "Appearance icon is Red colored",
         "ground_truth_steps": [
             "tap_element: Settings/Menu",
             "tap_element: Settings",
@@ -128,6 +141,8 @@ TEST_CASES = {
         "description": "Search for 'Print to PDF' option in the app.",
         "expected_result": "FAIL",
         "app_package": "md.obsidian",
+        "reset_app": False,  # Needs existing vault
+        "success_condition": "Print to PDF option is visible",
         "ground_truth_steps": [
             "tap_element: Menu",
             "search: Print to PDF",
@@ -139,6 +154,8 @@ TEST_CASES = {
         "description": "Create two notes: 'Project Ideas' and 'Todo List'.",
         "expected_result": "PASS",
         "app_package": "md.obsidian",
+        "reset_app": False,  # Needs existing vault
+        "success_condition": "Both notes 'Project Ideas' and 'Todo List' exist in vault",
         "ground_truth_steps": [
             "tap_element: Create new note",
             "clear_and_type: Project Ideas",
@@ -154,6 +171,8 @@ TEST_CASES = {
         "description": "Use the search function to find a note.",
         "expected_result": "PASS",
         "app_package": "md.obsidian",
+        "reset_app": False,  # Needs existing notes to search
+        "success_condition": "Search results show matching notes",
         "ground_truth_steps": [
             "tap_element: Search",
             "type_text: Meeting",
@@ -165,6 +184,8 @@ TEST_CASES = {
         "description": "Delete an existing note from the vault.",
         "expected_result": "PASS",
         "app_package": "md.obsidian",
+        "reset_app": False,  # Needs existing notes to delete
+        "success_condition": "Note is deleted from vault",
         "ground_truth_steps": [
             "long_press: Note",
             "tap_element: Delete",
@@ -176,6 +197,8 @@ TEST_CASES = {
         "description": "Change the app theme to dark mode.",
         "expected_result": "PASS",
         "app_package": "md.obsidian",
+        "reset_app": False,  # Needs existing vault
+        "success_condition": "App is in dark mode",
         "ground_truth_steps": [
             "tap_element: Settings",
             "tap_element: Appearance",
@@ -183,98 +206,52 @@ TEST_CASES = {
         ]
     },
     9: {
-        "name": "Create Folder",
-        "description": "Create a new folder named 'Work' in the vault.",
+        "name": "Create Vault with New Folder",
+        "description": "Create a new vault named 'TestVault' in a new folder named 'TestVault'.",
         "expected_result": "PASS",
         "app_package": "md.obsidian",
+        "reset_app": True,  # Fresh start needed - must reset to see Create Vault screen
+        "success_condition": "New folder 'TestVault' created and vault setup initiated",
         "ground_truth_steps": [
-            "tap_element: New folder",
-            "type_text: Work",
-            "tap_element: Create"
+            "tap_element: Create a vault",
+            "tap_element: Continue without sync",
+            "tap_input_field",
+            "type_text: TestVault",
+            "tap_element: Create a vault",
+            "tap_element: New folder icon",
+            "type_text: TestVault",
+            "tap_element: OK"
         ]
     },
     10: {
         "name": "Link Notes",
-        "description": "Create a link between two notes using [[]] syntax.",
+        "description": "Link two notes together by inserting a link to another note.",
         "expected_result": "PASS",
         "app_package": "md.obsidian",
+        "reset_app": False,  # Needs existing notes to link
+        "success_condition": "Note contains a link to another note (title and linked note are different)",
         "ground_truth_steps": [
-            "tap_element: Open note",
-            "type_text: [[Meeting Notes]]",
-            "verify: Link created"
+            "tap_element: note body area",
+            "tap_element: attach/link button",
+            "tap_element: folder",
+            "tap_element: other note",
+            "verify: link created"
         ]
     }
 }
 
 
 # =============================================================================
-# TOOL FUNCTIONS FOR ADK AGENT
+# TOOL FUNCTIONS - Now imported from agent.py
 # =============================================================================
-
-def get_screen_state() -> dict:
-    """Get the current screen state with all UI elements."""
-    elements = find_clickable_elements()
-    all_text = ' '.join([e.get('text', '').lower() for e in elements])
-    
-    screen_type = "unknown"
-    suggested_action = ""
-    
-    if 'create new note' in all_text:
-        screen_type = "inside_vault"
-        suggested_action = "TEST COMPLETE - vault entered successfully"
-    elif 'create a vault' in all_text and 'use my existing' in all_text:
-        screen_type = "initial_vault_choice"
-        suggested_action = "tap_on_element('Create a vault')"
-    elif 'continue without sync' in all_text:
-        screen_type = "sync_setup"
-        suggested_action = "tap_on_element('Continue without sync')"
-    elif 'vault name' in all_text:
-        screen_type = "vault_configuration"
-        suggested_action = "type_in_field('InternVault') then press_enter_key() then tap_on_element('Create a vault')"
-    elif 'use this folder' in all_text:
-        screen_type = "folder_picker"
-        suggested_action = "tap_on_element('USE THIS FOLDER')"
-    elif 'allow' in all_text and len(all_text) < 500:
-        screen_type = "permission_dialog"
-        suggested_action = "tap_on_element('Allow')"
-    
-    return {
-        "screen_type": screen_type,
-        "suggested_action": suggested_action,
-        "elements": [{"text": e.get('text', ''), "clickable": e.get('clickable', False)} 
-                    for e in elements[:15] if e.get('text')]
-    }
-
-
-def tap_on_element(element_text: str) -> dict:
-    """Tap on a UI element by its text."""
-    result = tap_element(element_text)
-    success = "Error" not in result
-    return {"success": success, "message": result}
-
-
-def tap_at_coordinates(x: int, y: int) -> dict:
-    """Tap at specific screen coordinates."""
-    tap(x, y)
-    return {"success": True, "message": f"Tapped at ({x}, {y})"}
-
-
-def type_in_field(text: str) -> dict:
-    """Clear the field and type text."""
-    result = clear_and_type(text)
-    return {"success": True, "message": f"Typed: {text}"}
-
-
-def press_enter_key() -> dict:
-    """Press the Enter key."""
-    press_enter()
-    return {"success": True, "message": "Pressed Enter"}
-
-
-def press_back_button() -> dict:
-    """Press the Back button."""
-    press_back()
-    return {"success": True, "message": "Pressed Back"}
+# Tools are defined in mobile_qa_agent/agent.py:
+# - get_screen_elements()
+# - tap_at_coordinates(x, y)
+# - tap_element_by_text(text)
+# - tap_at_coordinates(x, y)
+# - type_text_input(x, y, text)
+# - press_enter_key()
+# - press_back_button()
 
 
 # =============================================================================
@@ -282,7 +259,7 @@ def press_back_button() -> dict:
 # =============================================================================
 
 class MobileQARunner:
-    """Runs mobile QA tests using Google ADK with Groq."""
+    """Runs mobile QA tests using Google ADK."""
     
     def __init__(self, calculate_reward: bool = True, verbose: bool = True):
         self.calculate_reward = calculate_reward
@@ -294,16 +271,19 @@ class MobileQARunner:
         """Check if all prerequisites are met."""
         print("🔍 Checking prerequisites...")
         
-        # Check for Groq API key
-        groq_key = os.getenv("GROQ_API_KEY")
+        # Check for API keys
+        together_key = os.getenv("TOGETHER_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
         google_key = os.getenv("GOOGLE_API_KEY")
         
-        if groq_key:
-            print(f"✅ Groq API key found")
+        if together_key:
+            print(f"✅ Together API key found")
+        elif openai_key:
+            print(f"✅ OpenAI API key found")
         elif google_key:
             print(f"✅ Google API key found")
         else:
-            print("❌ No API key found. Set GROQ_API_KEY or GOOGLE_API_KEY")
+            print("❌ No API key found. Set TOGETHER_API_KEY, OPENAI_API_KEY, or GOOGLE_API_KEY")
             return False
         
         # Check ADK
@@ -343,8 +323,15 @@ class MobileQARunner:
         
         # Prepare app
         print(f"\n📱 Preparing {test['app_package']}...")
-        clear_app_data(test['app_package'])
-        time.sleep(1)
+        
+        # Only reset app data if test requires it
+        if test.get('reset_app', False):
+            print(f"   🔄 Resetting app data (fresh start required)")
+            clear_app_data(test['app_package'])
+            time.sleep(1)
+        else:
+            print(f"   ♻️ Keeping existing app state (no reset)")
+        
         launch_app(test['app_package'])
         time.sleep(3)
         
@@ -387,50 +374,31 @@ class MobileQARunner:
         return metrics.to_dict()
     
     async def _run_test_with_adk(self, test: dict, metrics: MetricsTracker) -> tuple:
-        """Run test using Google ADK with Groq LLM."""
+        """Run test using Google ADK."""
         
-        # Determine which model to use
-        groq_key = os.getenv("GROQ_API_KEY")
+        # Determine which model to use based on available API keys
+        together_key = os.getenv("TOGETHER_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+        google_key = os.getenv("GOOGLE_API_KEY")
         
-        if groq_key:
-            # Use Groq via LiteLLM format
-            model_name = "groq/llama-4-scout-17b-16e-instruct"
-            print(f"🤖 Using Groq model: {model_name}")
-        else:
-            # Fallback to Gemini
-            model_name = "gemini-1.5-flash"
+        if together_key:
+            model_name = "together_ai/meta-llama/Llama-3.3-70B-Instruct-Turbo"
+            print(f"🤖 Using Together AI model: {model_name}")
+        elif openai_key:
+            model_name = "openai/gpt-4o-mini"
+            print(f"🤖 Using OpenAI model: {model_name}")
+        elif google_key:
+            model_name = "gemini-2.0-flash"
             print(f"🤖 Using Gemini model: {model_name}")
+        else:
+            raise ValueError("No API key found")
         
-        # Create the ADK agent with tools
-        test_agent = Agent(
-            name="mobile_qa_agent",
-            model=model_name,
-            description="Mobile QA testing agent for Android apps",
-            instruction=f"""You are a mobile QA testing agent. Your task is:
-
-TEST OBJECTIVE: {test['description']}
-
-WORKFLOW:
-1. Call get_screen_state() to see what's on screen
-2. Based on screen_type, take the suggested_action
-3. After each action, call get_screen_state() again
-4. Repeat until screen_type is "inside_vault" or objective achieved
-
-SCREEN TYPES AND ACTIONS:
-- "initial_vault_choice" → tap_on_element("Create a vault")
-- "sync_setup" → tap_on_element("Continue without sync")
-- "vault_configuration" → type_in_field("InternVault"), press_enter_key(), tap_on_element("Create a vault")
-- "folder_picker" → tap_on_element("USE THIS FOLDER")
-- "permission_dialog" → tap_on_element("Allow")
-- "inside_vault" → TEST PASSED! Say "TEST PASSED"
-
-RULES:
-- Always call get_screen_state() first
-- Follow the suggested_action from screen state
-- When you see "inside_vault", immediately respond with "TEST PASSED"
-- If stuck after 5 attempts on same screen, respond with "TEST FAILED"
-""",
-            tools=[get_screen_state, tap_on_element, tap_at_coordinates, type_in_field, press_enter_key, press_back_button]
+        # Create the agent using the factory function from agent.py
+        test_agent = create_test_agent(
+            test_name=test['name'],
+            test_description=test['description'],
+            success_condition=test.get('success_condition', 'Complete the objective'),
+            model_name=model_name
         )
         
         # Create runner
@@ -448,7 +416,7 @@ RULES:
         )
         
         # Run the agent
-        prompt = f"Execute this test: {test['description']}. Start by calling get_screen_state() to see the current screen."
+        prompt = f"Execute this test: {test['description']}. Start by calling get_screen_elements() to see the current screen elements with their coordinates."
         
         final_result = "FAIL"
         reasoning = "Test did not complete"
@@ -485,15 +453,15 @@ RULES:
                     if response_text:
                         print(f"\n📝 Agent response: {response_text[:300]}")
                         
-                        if "PASSED" in response_text.upper():
+                        if "TEST PASSED" in response_text.upper() or "PASSED" in response_text.upper():
                             final_result = "PASS"
                             reasoning = response_text
-                        elif "FAILED" in response_text.upper() or "FAIL" in response_text.upper():
+                        elif "TEST FAILED" in response_text.upper() or "FAILED" in response_text.upper():
                             final_result = "FAIL"
                             reasoning = response_text
                 
                 # Safety limit
-                if step_count > 50:
+                if step_count > 60:
                     print("⚠️ Max events reached")
                     break
                     
@@ -502,6 +470,8 @@ RULES:
             reasoning = str(e)
         
         return final_result, reasoning
+    
+    # Note: Test instructions are now built in agent.py via get_test_prompt()
     
     def run_all_tests(self) -> dict:
         """Run all test cases."""
